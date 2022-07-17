@@ -1,39 +1,48 @@
 import * as model from './model.js';
 import recipeView from './views/recipeView.js';
-import icons from 'url:../img/icons.svg';
+import searchView from './views/searchView.js';
+import resultsView from './views/resultsView.js';
+import paginationView from './views/paginationView.js';
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
-const recipeContainer = document.querySelector('.recipe');
 const spinner = document.querySelector('.spinner');
-
-// https://forkify-api.herokuapp.com/v2
-
-///////////////////////////////////////
-
-const fetchRecipe = async function () {
+const controlRecipe = async function () {
   try {
-    spinner.classList.remove('hidden');
+    recipeView.renderSpinner();
     const id = window.location.hash.slice(1);
     await model.loadRecipe(id);
     const { recipe } = model.state;
     recipeView.render(recipe);
   } catch (error) {
-    alert(error);
+    // alert(error);
+    recipeView.renderError();
   }
 };
 
-class Dummy {
-  constructor(firstName, lastName) {
-    this.f_name = firstName;
-    this.l_name = lastName;
+const controlSearchResults = async function () {
+  try {
+    resultsView.renderSpinner();
+    const query = searchView.getQuery();
+    if (!query) return;
+
+    await model.loadSearchResults(query);
+
+    resultsView.render(model.getResultsForPage());
+    paginationView.render(model.state.search);
+  } catch (error) {
+    recipeView.renderError(error);
   }
+};
 
-  static someVariable = 'some static variable';
+const controlPagination = async function (pageNumber) {
+  resultsView.render(model.getResultsForPage(pageNumber));
+  paginationView.render(model.state.search);
+};
 
-  calcAge() {
-    console.log('sample function');
-  }
-}
-// fetchRecipe();
+const init = function () {
+  recipeView.addEventListerners(controlRecipe);
+  searchView.addEventListner(controlSearchResults);
+  paginationView.addEventListner(controlPagination);
+};
 
-['load', 'hashchange'].forEach(ev => window.addEventListener(ev, fetchRecipe));
+init();
